@@ -1,50 +1,57 @@
-/* 
-1. Use the inquirer npm package to get user input.
-2. Use the qr-image npm package to turn the user entered URL into a QR code image.
-3. Create a txt file to save the user input using the native fs node module.
-*/
+$("#generateQR").click(function () {
+  var url = $("#urlInput").val();
+  if (url.trim() === "")
+      alert("Please enter URL!");
+  if (url.trim() !== "") {
+    // Clear previous QR code
+    $("#qrImage").empty();
 
-import inquirer from "inquirer";
-import fs from "fs";
-import qr from "qr-image";
-
-// inquirer.prompt([
-//   {
-//     type: 'password',
-//     name: 'order',
-//     message: 'What do you want to order?'
-//   }
-// ]).then(answers => {
-//   console.log(`You ordered: ${answers.order}`);
-// });
-inquirer
-  .prompt([
-    /* Pass your questions in here */
-    {
-      name: "inputURL",
-      message: "Please enter your link to generate a QR code:",
-    },
-  ])
-  .then((answers) => {
-    // Use user feedback for... whatever!!
-    fs.writeFile("URL.txt", answers.inputURL, (err) => {
-      if (err) {
-        console.error("Error writing to file", err);
-      } else {
-      }
+    // Generate the QR code
+    new QRCode(document.getElementById("qrImage"), {
+      text: url,
+      width: 100,
+      height: 100,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H,
     });
-    const url = answers.inputURL;
-    
-    const qr_image = qr.image(url, {type: 'png'});
-    qr_image.pipe(fs.createWriteStream('qr_img.png'));
-    
-  })
-  .catch((error) => {
-    if (error.isTtyError) {
-      // Prompt couldn't be rendered in the current environment
-      console.log("Could not process your order. Please try again.");
-    } else {
-      // Something else went wrong
-      console.log("Try again!");
-    }
-  });
+
+    // Display the QR code
+    $("#qrImage").show();
+    $("#downloadQR").show();
+  } else {
+    console.log("Please enter a URL.");
+  }
+});
+
+$("#downloadQR").click(async function (event) {
+  event.preventDefault();
+
+  try {
+    // Create a file handle
+    const fileHandle = await window.showSaveFilePicker({
+      startIn: "downloads",
+      suggestedName: 'qr_img.png',
+      types: [{
+        description: 'PNG Image',
+        accept: {'image/png': ['.png']}
+      }]
+    });
+
+    // Create a writable stream
+    const writableStream = await fileHandle.createWritable();
+
+    // Get the QR code image data
+    const qrImage = document.getElementById('qrImage').querySelector('img');
+    const response = await fetch(qrImage.src);
+    const blob = await response.blob();
+
+    // Write the QR code image data to the file
+    await writableStream.write(blob);
+
+    // Close the writable stream
+    await writableStream.close();
+  } catch (error) {
+    console.error('Error saving file:', error);
+  }
+});
