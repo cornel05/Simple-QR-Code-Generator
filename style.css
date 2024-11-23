@@ -57,6 +57,7 @@ button:hover {
   display: flex;
   align-items: center;
   padding-left: 2rem;
+  margin-bottom: 10px;
 }
 
 #downloadQR {
